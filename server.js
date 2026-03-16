@@ -6,9 +6,16 @@ const path = require('path');
 
 const app = express();
 
+const dbUrl = process.env.DATABASE_URL;
+if (!dbUrl) {
+  console.error('ERROR: DATABASE_URL 환경 변수가 설정되지 않았습니다!');
+} else {
+  console.log('DATABASE_URL 설정됨:', dbUrl.replace(/\/\/.*:.*@/, '//***:***@'));
+}
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL?.includes('supabase') ? { rejectUnauthorized: false } : false
+  connectionString: dbUrl,
+  ssl: { rejectUnauthorized: false }
 });
 
 // Create tables
