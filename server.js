@@ -44,15 +44,19 @@ async function initDB() {
     );
   `);
 
-  // Create default admin if not exists
+  // Create or update admin account
+  const adminPass = process.env.ADMIN_PASSWORD || 'eeml9117as';
+  const hashed = bcrypt.hashSync(adminPass, 10);
   const { rows } = await pool.query('SELECT id FROM users WHERE username = $1', ['admin']);
   if (rows.length === 0) {
-    const hashed = bcrypt.hashSync('admin1234', 10);
     await pool.query(
       'INSERT INTO users (username, password, name, phone, advisor, role, approved) VALUES ($1,$2,$3,$4,$5,$6,$7)',
       ['admin', hashed, '관리자', '', '-', 'admin', 1]
     );
-    console.log('기본 관리자 계정 생성: admin / admin1234');
+    console.log('관리자 계정 생성');
+  } else {
+    await pool.query('UPDATE users SET password = $1 WHERE username = $2', [hashed, 'admin']);
+    console.log('관리자 비밀번호 업데이트');
   }
 }
 
