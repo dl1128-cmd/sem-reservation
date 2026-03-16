@@ -697,8 +697,9 @@ function showDetail(r) {
     <div class="detail-info"><label>날짜</label><p>${r.date}</p></div>
     <div class="detail-info"><label>시간</label><p>${r.start_time} ~ ${r.end_time}</p></div>
     <div class="detail-info"><label>목적</label><p>${escapeHtml(r.purpose || '-')}</p></div>
-    ${isMine ? `<button class="btn-danger" onclick="cancelReservation(${r.id}, false)">예약 취소</button>` : ''}
-    ${isAdmin && !isMine ? `<button class="btn-danger" onclick="cancelReservation(${r.id}, true)">관리자 삭제</button>` : ''}
+    ${isMine && !isAdmin && r.date >= formatDate(new Date()) ? `<button class="btn-danger" onclick="cancelReservation(${r.id}, false)">예약 취소</button>` : ''}
+    ${isMine && !isAdmin && r.date < formatDate(new Date()) ? `<p style="color:#999; margin-top:12px; font-size:0.85rem;">지난 예약은 수정/삭제할 수 없습니다.</p>` : ''}
+    ${isAdmin ? `<button class="btn-danger" onclick="cancelReservation(${r.id}, true)">관리자 삭제</button>` : ''}
   `;
   document.getElementById('detail-modal').classList.add('active');
 }

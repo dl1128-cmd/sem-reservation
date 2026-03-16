@@ -299,6 +299,11 @@ app.delete('/api/reservations/:id', requireAuth, async (req, res) => {
   const { rows } = await pool.query('SELECT * FROM reservations WHERE id = $1', [req.params.id]);
   if (!rows.length) return res.status(404).json({ error: '예약을 찾을 수 없습니다.' });
   if (rows[0].user_id !== req.session.userId) return res.status(403).json({ error: '본인의 예약만 취소할 수 있습니다.' });
+
+  // Block deletion of past reservations for non-admin users
+  const today = new Date().toISOString().split('T')[0];
+  if (rows[0].date < today) return res.status(403).json({ error: '지난 예약은 삭제할 수 없습니다.' });
+
   await pool.query('DELETE FROM reservations WHERE id = $1', [req.params.id]);
   res.json({ success: true });
 });
