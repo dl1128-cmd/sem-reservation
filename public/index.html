@@ -118,6 +118,8 @@
     .calendar-cell { height: 48px; border-right: 1px solid #f0f0f0; border-bottom: 1px solid #f0f0f0; position: relative; cursor: pointer; }
     .calendar-cell:hover { background: #f8f9ff; }
     .calendar-cell.today { background: #f0f4ff; }
+    .now-line { position: absolute; left: 0; right: 0; height: 2px; background: #e74c3c; z-index: 3; pointer-events: none; }
+    .now-line::before { content: ''; position: absolute; left: -4px; top: -3px; width: 8px; height: 8px; background: #e74c3c; border-radius: 50%; }
     .reservation-block { position: absolute; left: 2px; right: 2px; background: #3498db; color: white; border-radius: 4px; padding: 2px 6px; font-size: 0.7rem; overflow: hidden; cursor: pointer; z-index: 2; line-height: 1.3; }
     .reservation-block.mine { background: #2ecc71; }
     .reservation-block:hover { opacity: 0.9; }
@@ -593,6 +595,7 @@ async function loadReservations() {
   try {
     reservations = await api(`/api/reservations?week_start=${currentWeekStart}`);
     renderReservations();
+    renderNowLine();
   } catch {}
 }
 
@@ -622,6 +625,22 @@ function renderCalendar() {
     }
   }
 }
+
+function renderNowLine() {
+  document.querySelectorAll('.now-line').forEach(el => el.remove());
+  const now = new Date();
+  const today = formatDate(now);
+  const h = now.getHours();
+  const m = now.getMinutes();
+  if (h < HOUR_START || h >= HOUR_END) return;
+  const cell = document.querySelector(`.calendar-cell[data-date="${today}"][data-hour="${h}"]`);
+  if (!cell) return;
+  const line = document.createElement('div');
+  line.className = 'now-line';
+  line.style.top = (m / 60) * 48 + 'px';
+  cell.appendChild(line);
+}
+setInterval(renderNowLine, 60000);
 
 function renderReservations() {
   document.querySelectorAll('.reservation-block').forEach(el => el.remove());
