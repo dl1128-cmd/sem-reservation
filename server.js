@@ -192,7 +192,24 @@ app.get('/api/admin/stats', requireAdmin, async (req, res) => {
     GROUP BY u.advisor ORDER BY total_minutes DESC
   `, [weekStart, weekEnd]);
 
-  res.json({ totalUsers: +totalUsers, pendingUsers: +pendingUsers, totalReservations: +totalReservations, todayReservations: +todayReservations, advisorUsage, weekStart, weekEnd });
+  // Monthly usage per advisor
+  const now = new Date();
+  const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const monthEnd = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}-01`;
+
+  const { rows: advisorMonthly } = await pool.query(`
+    SELECT u.advisor,
+      COALESCE(SUM(
+        (CAST(substring(r.end_time from 1 for 2) AS INTEGER) * 60 + CAST(substring(r.end_time from 4 for 2) AS INTEGER))
+        - (CAST(substring(r.start_time from 1 for 2) AS INTEGER) * 60 + CAST(substring(r.start_time from 4 for 2) AS INTEGER))
+      ), 0) as total_minutes
+    FROM reservations r JOIN users u ON r.user_id = u.id
+    WHERE r.date >= $1 AND r.date < $2
+    GROUP BY u.advisor ORDER BY total_minutes DESC
+  `, [monthStart, monthEnd]);
+
+  res.json({ totalUsers: +totalUsers, pendingUsers: +pendingUsers, totalReservations: +totalReservations, todayReservations: +todayReservations, advisorUsage, advisorMonthly, weekStart, weekEnd, monthStart });
 });
 
 // ── Reservation Routes ──

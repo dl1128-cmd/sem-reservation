@@ -304,6 +304,12 @@
       <div class="advisor-usage-list" id="advisor-usage-list"></div>
     </div>
 
+    <!-- Advisor Monthly Usage -->
+    <div class="admin-section">
+      <h3 id="monthly-title">교수별 이번 달 사용량</h3>
+      <div class="advisor-usage-list" id="advisor-monthly-list"></div>
+    </div>
+
     <!-- Pending Users -->
     <div class="admin-section" id="pending-section">
       <h3>승인 대기 회원</h3>
@@ -716,6 +722,26 @@ async function loadAdminStats() {
           <span class="advisor-name">${escapeHtml(a.advisor)}</span>
           <div class="usage-bar-wrap"><div class="usage-bar ${cls}" style="width:${Math.min(pct,100)}%"></div></div>
           <span class="usage-bar-label">${a.total_minutes}분 / 180분</span>
+        </div>`;
+      }).join('');
+    }
+
+    // Monthly usage
+    const monthName = s.monthStart ? s.monthStart.substring(0, 7) : '';
+    document.getElementById('monthly-title').textContent = `교수별 월간 사용량 (${monthName})`;
+    const mList = document.getElementById('advisor-monthly-list');
+    if (!s.advisorMonthly || s.advisorMonthly.length === 0) {
+      mList.innerHTML = '<div style="color:#999; font-size:0.9rem;">이번 달 예약 없음</div>';
+    } else {
+      const maxMonthly = Math.max(...s.advisorMonthly.map(a => +a.total_minutes), 1);
+      mList.innerHTML = s.advisorMonthly.map(a => {
+        const pct = Math.round((+a.total_minutes / maxMonthly) * 100);
+        const hours = Math.floor(+a.total_minutes / 60);
+        const mins = +a.total_minutes % 60;
+        return `<div class="advisor-usage-item">
+          <span class="advisor-name">${escapeHtml(a.advisor)}</span>
+          <div class="usage-bar-wrap"><div class="usage-bar" style="width:${pct}%"></div></div>
+          <span class="usage-bar-label">${hours}시간 ${mins}분</span>
         </div>`;
       }).join('');
     }
