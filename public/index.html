@@ -543,28 +543,49 @@ function showApp() {
   showView('calendar');
   renderCalendar();
   loadReservations();
-  if (!isAdmin) loadUsage();
-  else document.querySelector('.usage-card').style.display = 'none';
+  loadUsage();
 }
 
 function changeWeek(dir) {
   currentWeekStart = addDays(currentWeekStart, dir * 7);
   renderCalendar();
   loadReservations();
-  if (currentUser.role !== 'admin') loadUsage();
+  loadUsage();
 }
 
 async function loadUsage() {
   try {
-    const data = await api(`/api/advisor-usage?advisor=${encodeURIComponent(currentUser.advisor)}&week_start=${currentWeekStart}`);
-    const pct = Math.round((data.used_minutes / data.limit_minutes) * 100);
-    const bar = document.getElementById('usage-bar');
-    bar.style.width = pct + '%';
-    bar.className = 'usage-bar' + (pct >= 90 ? ' danger' : pct >= 60 ? ' warning' : '');
-    document.getElementById('usage-text').textContent = `${data.used_minutes}분 / ${data.limit_minutes}분 (${pct}%)`;
-    document.getElementById('usage-title').textContent = `${currentUser.advisor} 교수님 연구실 - 주간 SEM 사용량`;
-    document.getElementById('usage-detail').textContent = `잔여: ${data.remaining_minutes}분`;
-    document.querySelector('.usage-card').style.display = '';
+    const isAdmin = currentUser.role === 'admin';
+    if (isAdmin) {
+      // Admin: show all advisors' weekly usage
+      const stats = await api('/api/admin/stats');
+      document.getElementById('usage-title').textContent = `교수별 주간 SEM 사용량 (${currentWeekStart} 주)`;
+      const bar = document.getElementById('usage-bar');
+      bar.style.width = '0%';
+      document.getElementById('usage-text').textContent = '';
+      let detailHtml = '';
+      if (stats.advisorUsage && stats.advisorUsage.length > 0) {
+        detailHtml = stats.advisorUsage.map(a => {
+          const mins = +a.total_minutes;
+          const remaining = Math.max(0, 180 - mins);
+          return `${escapeHtml(a.advisor)}: ${mins}분 사용 / 잔여 ${remaining}분`;
+        }).join(' | ');
+      } else {
+        detailHtml = '이번 주 예약 없음';
+      }
+      document.getElementById('usage-detail').innerHTML = detailHtml;
+      document.querySelector('.usage-card').style.display = '';
+    } else {
+      const data = await api(`/api/advisor-usage?advisor=${encodeURIComponent(currentUser.advisor)}&week_start=${currentWeekStart}`);
+      const pct = Math.round((data.used_minutes / data.limit_minutes) * 100);
+      const bar = document.getElementById('usage-bar');
+      bar.style.width = pct + '%';
+      bar.className = 'usage-bar' + (pct >= 90 ? ' danger' : pct >= 60 ? ' warning' : '');
+      document.getElementById('usage-text').textContent = `${data.used_minutes}분 / ${data.limit_minutes}분 (${pct}%)`;
+      document.getElementById('usage-title').textContent = `${currentUser.advisor} 교수님 연구실 - 주간 SEM 사용량`;
+      document.getElementById('usage-detail').textContent = `잔여: ${data.remaining_minutes}분`;
+      document.querySelector('.usage-card').style.display = '';
+    }
   } catch {}
 }
 
